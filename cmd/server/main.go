@@ -52,7 +52,7 @@ func main() {
 	app.Use(gateway.MiddlewareContentType(fiber.MIMEApplicationJSONCharsetUTF8))
 
 	// Mount API router.
-	app.Use(API(db))
+	app.Mount("/", API(db))
 
 	// Configure fallback route.
 	app.Use(gateway.MiddlewareNotFound())

@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/rs/zerolog/log"
 )
 
 const schema = `
@@ -29,7 +33,15 @@ type Queue struct {
 }
 
 func MigrateDB() (*sqlx.DB, error) {
-	db, err := sqlx.Open("sqlite3", "./database.sqlite3")
+	dbDir := "./data"
+	dbPath := fmt.Sprintf("%s/v1.sqlite3", dbDir)
+
+	// The leading zero is important as it forces the number to be parsed as octal.
+	if err := os.MkdirAll(dbDir, os.FileMode(0700)); err != nil {
+		log.Fatal().Err(err).Msg("Failed to create database directory")
+	}
+
+	db, err := sqlx.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, err
 	}

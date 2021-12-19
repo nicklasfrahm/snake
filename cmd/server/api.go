@@ -105,7 +105,7 @@ func API(db *sqlx.DB) *fiber.App {
 		queue := new(Queue)
 		if err := db.Get(queue, "SELECT * FROM 'queues' WHERE name=$1", name); err != nil {
 			return c.Status(404).JSON(ErrorEnvelope{
-				Error: ErrEntityNotFound,
+				Error: *ErrEntityNotFound,
 			})
 		}
 
