@@ -17,8 +17,7 @@ CREATE TABLE IF NOT EXISTS 'queues' (
 	'title' VARCHAR(128) NOT NULL,
 	'description' VARCHAR(2048) NOT NULL,
 	'number' INTEGER NOT NULL,
-	UNIQUE(name),
-	UNIQUE(owner)
+	UNIQUE(name)
 );
 `
 
