@@ -38,6 +38,8 @@ func NewServiceError(status int, message string) *ServiceError {
 	}
 }
 
+// TODO: Allow usage of name or UUID for singular endpoints.
+
 func API(db *sqlx.DB) *fiber.App {
 	api := fiber.New()
 
@@ -78,7 +80,7 @@ func API(db *sqlx.DB) *fiber.App {
 		entity.ID = uuid.NewString()
 
 		// Insert new entity.
-		_, err := db.NamedExec("INSERT INTO 'queues' (id, name, owner, title, description, number) VALUES (:id, :name, :owner, :title, :description, :number)", entity)
+		_, err := db.NamedExec("INSERT INTO queues (id, name, owner, title, description, number) VALUES (:id, :name, :owner, :title, :description, :number)", entity)
 		if err != nil {
 			// TODO: Handle unique constraint errors gracefully.
 			return err
@@ -103,8 +105,8 @@ func API(db *sqlx.DB) *fiber.App {
 		name := c.Params("name")
 
 		queue := new(Queue)
-		if err := db.Get(queue, "SELECT * FROM 'queues' WHERE name=$1", name); err != nil {
-			return c.Status(404).JSON(ErrorEnvelope{
+		if err := db.Get(queue, "SELECT * FROM queues WHERE name = $1", name); err != nil {
+			return c.Status(ErrEntityNotFound.Status).JSON(ErrorEnvelope{
 				Error: *ErrEntityNotFound,
 			})
 		}
@@ -113,11 +115,36 @@ func API(db *sqlx.DB) *fiber.App {
 	})
 
 	api.Put("/queues/:name", func(c *fiber.Ctx) error {
+		// TODO: Implement this.
+
 		return c.SendStatus(fiber.StatusOK)
 	})
 
 	api.Delete("/queues/:name", func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusOK)
+		// TODO: Implement this.
+		name := c.Params("name")
+
+		res, err := db.Exec("DELETE FROM queues WHERE name = $1", name)
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if rowsAffected == 0 {
+			return c.Status(ErrEntityNotFound.Status).JSON(ErrorEnvelope{
+				Error: *ErrEntityNotFound,
+			})
+		}
+
+		if rowsAffected != 1 {
+			return fmt.Errorf("expected 1 row to be affected, got %d", rowsAffected)
+		}
+
+		return c.SendStatus(fiber.StatusNoContent)
 	})
 
 	return api

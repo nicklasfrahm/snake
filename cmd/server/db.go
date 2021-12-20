@@ -10,13 +10,13 @@ import (
 )
 
 const schema = `
-CREATE TABLE IF NOT EXISTS 'queues' (
-	'id' VARCHAR(36) PRIMARY KEY,
-	'name' VARCHAR(128) NOT NULL,
-	'owner' VARCHAR(128) NOT NULL,
-	'title' VARCHAR(128) NOT NULL,
-	'description' VARCHAR(2048) NOT NULL,
-	'number' INTEGER NOT NULL,
+CREATE TABLE IF NOT EXISTS queues (
+	id VARCHAR(36) PRIMARY KEY,
+	name VARCHAR(128) NOT NULL,
+	owner VARCHAR(128) NOT NULL,
+	title VARCHAR(128) NOT NULL,
+	description VARCHAR(2048) NOT NULL,
+	number INTEGER NOT NULL,
 	UNIQUE(name)
 );
 `
