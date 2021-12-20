@@ -16,6 +16,7 @@ require (
 	github.com/cristalhq/jwt/v4 v4.0.0-beta // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/jmoiron/sqlx v1.3.4 // indirect
+	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/klauspost/compress v1.13.4 // indirect
 	github.com/mattn/go-sqlite3 v1.14.9 // indirect
