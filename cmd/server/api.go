@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 
 	"github.com/cristalhq/jwt/v4"
 	"github.com/gofiber/fiber/v2"
@@ -13,7 +14,8 @@ import (
 )
 
 var (
-	ErrEntityNotFound = NewServiceError(404, "Entity Not Found")
+	ErrEntityNotFound    = NewServiceError(404, "Entity Not Found")
+	ErrInvalidIdentifier = NewServiceError(400, "Invalid Identifier")
 )
 
 type DataEnvelope struct {
@@ -40,6 +42,8 @@ func NewServiceError(status int, message string) *ServiceError {
 
 // TODO: Allow usage of name or UUID for singular endpoints.
 
+var isAlphaNumeric = regexp.MustCompile(`^[0-9a-zA-Z]+$`).MatchString
+
 func API(db *sqlx.DB) *fiber.App {
 	api := fiber.New()
 
@@ -59,7 +63,7 @@ func API(db *sqlx.DB) *fiber.App {
 
 	api.Get("/queues", func(c *fiber.Ctx) error {
 		queues := make([]Queue, 0)
-		if err := db.Select(&queues, `SELECT * FROM 'queues'`); err != nil {
+		if err := db.Select(&queues, `SELECT * FROM queues`); err != nil {
 			return err
 		}
 
@@ -67,9 +71,8 @@ func API(db *sqlx.DB) *fiber.App {
 	})
 
 	api.Post("/queues", func(c *fiber.Ctx) error {
-		entity := new(Queue)
-
 		// Parse request body.
+		entity := new(Queue)
 		if err := c.BodyParser(entity); err != nil {
 			return err
 		}
@@ -80,7 +83,9 @@ func API(db *sqlx.DB) *fiber.App {
 		entity.ID = uuid.NewString()
 
 		// Insert new entity.
-		_, err := db.NamedExec("INSERT INTO queues (id, name, owner, title, description, number) VALUES (:id, :name, :owner, :title, :description, :number)", entity)
+		_, err := db.NamedExec(`
+            INSERT
+            INTO queues (id, name, owner, title, description, number) VALUES (:id, :name, :owner, :title, :description, :number)`, entity)
 		if err != nil {
 			// TODO: Handle unique constraint errors gracefully.
 			return err
@@ -104,25 +109,65 @@ func API(db *sqlx.DB) *fiber.App {
 	api.Get("/queues/:name", func(c *fiber.Ctx) error {
 		name := c.Params("name")
 
-		queue := new(Queue)
-		if err := db.Get(queue, "SELECT * FROM queues WHERE name = $1", name); err != nil {
+		// Prevent SQL injection.
+		if !isAlphaNumeric(name) {
+			return c.Status(ErrInvalidIdentifier.Status).JSON(ErrorEnvelope{
+				Error: *ErrInvalidIdentifier,
+			})
+		}
+
+		entity := new(Queue)
+		if err := db.Get(entity, "SELECT * FROM queues WHERE name = $1", name); err != nil {
 			return c.Status(ErrEntityNotFound.Status).JSON(ErrorEnvelope{
 				Error: *ErrEntityNotFound,
 			})
 		}
 
-		return c.Status(fiber.StatusOK).JSON(queue)
+		return c.Status(fiber.StatusOK).JSON(entity)
 	})
 
 	api.Put("/queues/:name", func(c *fiber.Ctx) error {
-		// TODO: Implement this.
+		name := c.Params("name")
 
-		return c.SendStatus(fiber.StatusOK)
+		// Prevent SQL injection.
+		if !isAlphaNumeric(name) {
+			return c.Status(ErrInvalidIdentifier.Status).JSON(ErrorEnvelope{
+				Error: *ErrInvalidIdentifier,
+			})
+		}
+
+		// Parse request body.
+		entity := new(Queue)
+		if err := c.BodyParser(entity); err != nil {
+			return err
+		}
+		entity.Name = name
+
+		_, err := db.NamedExec("UPDATE queues SET title = :title, description = :description, number = :number WHERE EXISTS (SELECT * FROM queues WHERE name = :name)", entity)
+		if err != nil {
+			return err
+		}
+
+		// TODO: Have someone review this. This doesn't really seem
+		// like the right way to check if the query succeeded.
+		if err := db.Get(entity, "SELECT * FROM queues WHERE name = $1", name); err != nil {
+			return c.Status(ErrEntityNotFound.Status).JSON(ErrorEnvelope{
+				Error: *ErrEntityNotFound,
+			})
+		}
+
+		return c.Status(fiber.StatusOK).JSON(entity)
 	})
 
 	api.Delete("/queues/:name", func(c *fiber.Ctx) error {
-		// TODO: Implement this.
 		name := c.Params("name")
+
+		// Prevent SQL injection.
+		if !isAlphaNumeric(name) {
+			return c.Status(ErrInvalidIdentifier.Status).JSON(ErrorEnvelope{
+				Error: *ErrInvalidIdentifier,
+			})
+		}
 
 		res, err := db.Exec("DELETE FROM queues WHERE name = $1", name)
 		if err != nil {

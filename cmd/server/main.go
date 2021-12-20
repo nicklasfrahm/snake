@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/helmet/v2"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
