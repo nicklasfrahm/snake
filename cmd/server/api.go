@@ -85,7 +85,9 @@ func API(db *sqlx.DB) *fiber.App {
 		// Insert new entity.
 		_, err := db.NamedExec(`
             INSERT
-            INTO queues (id, name, owner, title, description, number) VALUES (:id, :name, :owner, :title, :description, :number)`, entity)
+            INTO queues (id, name, owner, title, description, number)
+            VALUES (:id, :name, :owner, :title, :description, :number)
+        `, entity)
 		if err != nil {
 			// TODO: Handle unique constraint errors gracefully.
 			return err
@@ -143,7 +145,13 @@ func API(db *sqlx.DB) *fiber.App {
 		}
 		entity.Name = name
 
-		_, err := db.NamedExec("UPDATE queues SET title = :title, description = :description, number = :number WHERE EXISTS (SELECT * FROM queues WHERE name = :name)", entity)
+		_, err := db.NamedExec(`
+            UPDATE queues
+            SET title = :title,
+                description = :description,
+                number = :number
+            WHERE name = :name
+        `, entity)
 		if err != nil {
 			return err
 		}
